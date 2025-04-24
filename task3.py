@@ -1,0 +1,1 @@
+# 3. For grades equal to A & B, we classify them into “good grades”, for grades equal to other levels, we classify them into “bad grades”. Can you build a statistical model to predict whether a new applicant has “good grades” or “bad grades”? Please elaborate on which features predict this outcome and why you include them in your simple model.

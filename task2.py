@@ -1,0 +1,1 @@
+# 2. Use the "sample"command to randomly select certain index numbers and then use the selected index numbers to divide the dataset into a training dataset and testing dataset. Please use 30% of the data for testing and the rest of the 70% for training.
