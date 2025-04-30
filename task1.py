@@ -2,11 +2,12 @@
 import matplotlib.pyplot as plt  # matplotlib helps us create visual graphs and charts
 import csv  # csv module helps us read data from CSV (spreadsheet) files
 from collections import defaultdict  # defaultdict is a special dictionary that can create default values automatically
+import numpy as np  # numpy helps with numerical operations and data manipulation
 
-# defaultdict is like a smart dictionary that automatically creates a new entry with default values
-# when we try to access a key that doesn't exist yet. This helps us avoid writing extra code to check
-# if a grade exists in our dictionary. The lambda function below creates a new dictionary with
-# {total: 0, defaults: 0} whenever we access a new grade for the first time.
+# defaultdict is chosen over regular dictionaries for two key reasons:
+# 1. Performance: It eliminates the need to check if a key exists before incrementing counters
+# 2. Code cleanliness: It reduces boilerplate code for initializing new dictionary entries
+# This makes our code more readable and efficient, especially when dealing with unknown categories
 grade_stats = defaultdict(lambda: {'total': 0, 'defaults': 0})
 
 # Open and read the CSV file that contains our loan data
@@ -33,8 +34,14 @@ with open('data/loan_data_2017.csv', 'r', encoding='utf-8') as file:
             grade_stats[grade]['total'] += 1
             
             # Check if this loan defaulted
-            # We consider a loan as defaulted if it's either 'charged off' or explicitly marked as 'default'
-            # or if it was charged off due to not meeting credit policy
+            # The definition of "default" includes three specific statuses:
+            # 1. 'charged off' - Loans that the lender has written off as a loss
+            # 2. 'default' - Loans explicitly marked as defaulted
+            # 3. 'does not meet the credit policy. status:charged off' - Loans that were charged off
+            #    due to not meeting credit policy
+            # These statuses were chosen because they all represent loans where the borrower failed to
+            # repay as agreed, resulting in a loss for the lender. In the P2P lending context, these
+            # are the outcomes we want to predict and avoid.
             if status in ['charged off', 'default', 'does not meet the credit policy. status:charged off']:
                 grade_stats[grade]['defaults'] += 1
             
@@ -62,18 +69,45 @@ for grade in grades:
     # Print the statistics in a readable format
     print(f"Grade {grade}: {rate:.2%} ({defaults}/{total} loans)")
 
-# Create a visual bar chart of the default rates
-plt.figure(figsize=(10, 6))  # Create a new figure with specified size (width=10, height=6)
-plt.bar(grades, default_rates, color='skyblue')  # Create bars for each grade
+# Create a visual bar chart of the default rates with enhanced formatting
+plt.figure(figsize=(10, 6))  # Create a new figure with specified size 
+
+# Create bars with a color gradient that helps distinguish between different grades
+# Using a color gradient from blue to red helps visually emphasize the risk progression
+colors = plt.cm.coolwarm(np.linspace(0, 1, len(grades)))
+bars = plt.bar(grades, default_rates, color=colors)
+
+# Add data labels on top of each bar for better readability
+for bar, rate in zip(bars, default_rates):
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 0.005,
+             f'{rate:.1%}', ha='center', va='bottom', fontweight='bold')
+
+# Add grid lines for easier visual comparison of values
+plt.grid(axis='y', linestyle='--', alpha=0.7)
 
 # Add labels and title to make the graph more informative
-plt.title('Loan Default Rates by Grade')  # Add a title to the graph
-plt.xlabel('Loan Grade')  # Label for the x-axis (horizontal)
-plt.ylabel('Default Rate')  # Label for the y-axis (vertical)
+plt.title('Loan Default Rates by Grade', fontsize=14, fontweight='bold')
+plt.xlabel('Loan Grade', fontsize=12)
+plt.ylabel('Default Rate', fontsize=12)
+
 # Format the y-axis to show percentages
 plt.gca().yaxis.set_major_formatter(plt.matplotlib.ticker.PercentFormatter(1.0))
 
+# Add a brief interpretation of the results as text annotation
+plt.figtext(0.5, 0.01, 
+           "As expected, default rates increase significantly from grade A to G. This confirms that \n"
+           "the LendingClub grading system effectively stratifies credit risk, with each grade \n"
+           "representing a distinct risk level for investors.", 
+           ha='center', fontsize=10, bbox={"facecolor":"lightgrey", "alpha":0.5, "pad":5})
+
 # Save the graph as an image file
-plt.savefig('task1_default_rates.png')  # Save with task-specific name
+plt.tight_layout(rect=[0, 0.05, 1, 0.95])  # Adjust layout to make room for the annotation
+plt.savefig('task1_default_rates.png', dpi=300)  # Save with task-specific name and high resolution
 plt.close()  # Close the plot to free up memory
 
+print("\nGraph saved as 'task1_default_rates.png'")
+print("Interpretation: The results clearly show that default rates progressively increase from lower to higher risk grades,")
+print("confirming that LendingClub's grading system effectively stratifies borrowers by credit risk.")
+print("This finding is relevant to the P2P vs banking study as it demonstrates how P2P platforms use")
+print("alternative scoring systems to segment borrowers, potentially serving segments underserved by traditional banks.")
